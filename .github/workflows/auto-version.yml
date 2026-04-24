@@ -1,0 +1,187 @@
+name: Auto Version
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Calculate next version
+        id: version
+        run: |
+          TODAY=$(TZ=Asia/Seoul date +'%y.%m.%d')
+          echo "today=$TODAY" >> "$GITHUB_OUTPUT"
+
+          MAX_SS=0
+          for tag in $(git tag -l "${TODAY}-*"); do
+            SS_PART="${tag##*-}"
+            SS_NUM=$((10#$SS_PART))
+            if [ "$SS_NUM" -gt "$MAX_SS" ]; then
+              MAX_SS=$SS_NUM
+            fi
+          done
+
+          NEXT_SS=$(printf "%02d" $((MAX_SS + 1)))
+          VERSION="${TODAY}-${NEXT_SS}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Computed version: $VERSION"
+
+      - name: Collect release notes
+        id: notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "prev_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
+
+          BULLETS=$(PREV_TAG="$PREV_TAG" python3 <<'PYEOF'
+          import os
+          import re
+          import subprocess
+
+          prev_tag = os.environ.get('PREV_TAG', '')
+
+          if prev_tag:
+              cmd = ['git', 'log', f'{prev_tag}..HEAD',
+                     '--pretty=format:%h %s', '--no-merges']
+          else:
+              cmd = ['git', 'log', 'HEAD',
+                     '--pretty=format:%h %s', '--no-merges']
+
+          result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+          lines = [l for l in result.stdout.splitlines() if l.strip()]
+
+          PRIORITY = {
+              'feature': 0,
+              'fix': 1,
+              'enhancement': 2,
+              'refactor': 3,
+              'docs': 4,
+              'chore': 5,
+          }
+          TYPE_RE = re.compile(r'^([a-z]+)(\(.+?\))?:')
+
+          entries = []
+          for idx, line in enumerate(lines):
+              sha, _, title = line.partition(' ')
+              if not title or title.startswith('chore(version):'):
+                  continue
+              m = TYPE_RE.match(title)
+              type_name = m.group(1) if m else ''
+              priority = PRIORITY.get(type_name, 99)
+              entries.append((priority, idx, title, sha))
+
+          entries.sort(key=lambda e: (e[0], e[1]))
+          print('\n'.join(f'- {title} ({sha})' for _, _, title, sha in entries))
+          PYEOF
+          )
+
+          if [ -n "$PREV_TAG" ] && [ -n "$BULLETS" ]; then
+            NOTES="${BULLETS}
+
+          **Full Changelog**: ${SERVER_URL}/${REPOSITORY}/compare/${PREV_TAG}...${VERSION}"
+          else
+            NOTES="${BULLETS}"
+          fi
+
+          {
+            echo "notes<<EOF_NOTES"
+            printf '%s\n' "$NOTES"
+            echo "EOF_NOTES"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Update version.json
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          RELEASED_AT=$(TZ=Asia/Seoul date -Iseconds)
+          python3 -c "
+          import json
+          with open('version.json') as f:
+              data = json.load(f)
+          data['version'] = '${VERSION}'
+          data['released_at'] = '${RELEASED_AT}'
+          data.setdefault('min_compatible', '${VERSION}')
+          ordered = {
+              'version': data['version'],
+              'released_at': data['released_at'],
+              'min_compatible': data['min_compatible'],
+          }
+          for key, value in data.items():
+              if key not in ordered:
+                  ordered[key] = value
+          ordered = {k: v for k, v in ordered.items() if v is not None}
+          with open('version.json', 'w') as f:
+              json.dump(ordered, f, indent=2, ensure_ascii=False)
+              f.write('\n')
+          "
+
+      - name: Commit, tag, and push
+        id: commit
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          NOTES: ${{ steps.notes.outputs.notes }}
+        run: |
+          git add version.json
+          if git diff --cached --quiet; then
+            echo "No changes to version.json, skipping"
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "skipped=false" >> "$GITHUB_OUTPUT"
+
+          {
+            printf 'chore(version): release %s [skip ci]\n' "$VERSION"
+            if [ -n "$NOTES" ]; then
+              printf '\n'
+              printf '%s\n' "$NOTES"
+            fi
+          } > /tmp/commit_msg.txt
+
+          {
+            printf 'Release %s\n' "$VERSION"
+            if [ -n "$NOTES" ]; then
+              printf '\n'
+              printf '%s\n' "$NOTES"
+            fi
+          } > /tmp/tag_msg.txt
+
+          git commit -F /tmp/commit_msg.txt
+          git tag -a "${VERSION}" -F /tmp/tag_msg.txt
+          git push origin main --follow-tags
+
+      - name: Create GitHub Release
+        if: steps.commit.outputs.skipped != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+          NOTES: ${{ steps.notes.outputs.notes }}
+        run: |
+          if [ -n "$NOTES" ]; then
+            printf '%s\n' "$NOTES" > /tmp/release_notes.md
+            gh release create "${VERSION}" \
+              --title "${VERSION}" \
+              --notes-file /tmp/release_notes.md
+          else
+            gh release create "${VERSION}" \
+              --title "${VERSION}" \
+              --generate-notes
+          fi
