@@ -32,8 +32,7 @@ def get_due_words(limit: int) -> list[dict]:
             WHERE s.learned_at IS NULL OR s.due_at <= ?
             ORDER BY
                 CASE WHEN s.learned_at IS NULL THEN 1 ELSE 0 END,
-                s.due_at,
-                w.id
+                RANDOM()
             LIMIT ?
             """,
             (utc_now_iso(), limit),
