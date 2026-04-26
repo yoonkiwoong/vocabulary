@@ -18,10 +18,16 @@ If `data/vocabulary.db` is missing, or the `words` table is still empty, stop an
    - question: "{word}  ·  {pos}"
    - header: "{current}/{total}{' NEW' if is_new else ''}" (keep under 12 chars, e.g. "3/20 NEW" or "3/20")
    - options:
-     - label: "Again", description: "잘 기억나지 않음"
-     - label: "Good", description: "기억함"
-   - After the user selects, store `{"word_id": <id>, "rating": "<again|good>"}` in memory.
-   - Do NOT call any script during this loop.
+     - label: "Again", description: ""
+     - label: "Good", description: ""
+     - label: "Stop", description: ""
+   - If "Again" or "Good": store `{"word_id": <id>, "rating": "<again|good>"}` in memory. Do NOT call any script.
+   - If "Stop":
+     - If 0 ratings have been collected so far: exit immediately.
+     - Otherwise: use AskUserQuestion — question: "Save progress?", header: "Stop",
+       options: [{label: "Yes", description: "Save and exit"}, {label: "No", description: "Exit without saving"}]
+       - Yes: pipe the collected ratings to batch_record_study.py (step 3b), show summary (step 5), then exit.
+       - No: exit immediately with no DB changes.
 
 3b. After all words have been rated, pipe the collected JSON array to `batch_record_study.py` via stdin:
     ```
