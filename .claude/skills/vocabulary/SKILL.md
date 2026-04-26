@@ -20,11 +20,18 @@ If `data/vocabulary.db` is missing, or the `words` table is still empty, stop an
    - options:
      - label: "Again", description: "잘 기억나지 않음"
      - label: "Good", description: "기억함"
-   - After the user selects, run `python3.11 scripts/record_study.py --word-id <id> --rating <again|good>`.
+   - After the user selects, store `{"word_id": <id>, "rating": "<again|good>"}` in memory.
+   - Do NOT call any script during this loop.
 
-4. If `record_study.py` fails for any word:
-   - Show the error briefly.
-   - Use AskUserQuestion to ask whether to skip (`Skip`) or quit (`Quit`).
+3b. After all words have been rated, pipe the collected JSON array to `batch_record_study.py` via stdin:
+    ```
+    echo '<json_array>' | python3.11 scripts/batch_record_study.py
+    ```
+    Example: `echo '[{"word_id":1,"rating":"good"},{"word_id":2,"rating":"again"}]' | python3.11 scripts/batch_record_study.py`
+
+4. If `batch_record_study.py` exits non-zero:
+   - Show the error output (includes which word_id caused the failure).
+   - Use AskUserQuestion to ask whether to retry (`Retry`, re-runs the full batch with ratings still in memory) or quit (`Quit`).
    - Do not continue automatically.
    - Do not commit or push after an error-intervened session.
 5. After a clean session, show a short summary with reviewed count, `Again` count, and `Good` count.
