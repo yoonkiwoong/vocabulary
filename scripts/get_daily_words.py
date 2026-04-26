@@ -29,7 +29,8 @@ def get_due_words(limit: int) -> list[dict]:
                 CASE WHEN s.learned_at IS NULL THEN 1 ELSE 0 END AS is_new
             FROM words AS w
             JOIN schedule AS s ON w.id = s.word_id
-            WHERE s.learned_at IS NULL OR s.due_at <= ?
+            WHERE (s.learned_at IS NULL OR s.due_at <= ?)
+              AND w.excluded = 0
             ORDER BY
                 CASE WHEN s.learned_at IS NULL THEN 1 ELSE 0 END,
                 RANDOM()

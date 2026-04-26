@@ -42,3 +42,18 @@ If `data/vocabulary.db` is missing, or the `words` table is still empty, stop an
    - Do not commit or push after an error-intervened session.
 5. After a clean session, show a short summary with reviewed count, `Again` count, and `Good` count.
 6. Only if the user explicitly asks for git persistence, stage or commit `data/vocabulary.db`. Do not run `git commit` or `git push` automatically.
+
+## Viewer Mode (excluded words)
+
+트리거: 사용자가 "제외 단어 보기", "viewer", "excluded words", "기능어" 등 요청 시.
+
+1. `python3.11 scripts/get_excluded_words.py` 실행 후 JSON 파싱. `--pos` 로 품사 필터 가능.
+2. 단어가 없으면 "제외된 단어가 없습니다"로 종료.
+3. 각 단어에 AskUserQuestion:
+   - question: "{word}  ·  {pos}"
+   - header: "{current}/{total}"
+   - options:
+     - label: "Next", description: ""
+     - label: "Stop", description: ""
+4. 평가 수집 없음. `batch_record_study.py` 호출 없음.
+5. 완료 후 열람한 단어 수만 표시.

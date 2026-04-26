@@ -8,6 +8,14 @@ DST_DB = REPO_ROOT / "data" / "vocabulary.db"
 
 CEFR_ORDER = ["A1", "A2", "B1", "B2", "C1"]
 
+EXCLUDED_POS = {
+    "conj.", "det.", "det./pron.", "exclam.", "modal v.", "adj./adv.",
+    "auxiliary v.", "pron./det.", "indefinite article", "exclam./n.",
+    "det./number", "conj./prep.", "adj./pron.", "prep./adv.", "number/det.",
+    "infinitive marker", "det./pron./adv.", "det./adj.", "definite article",
+    "conj./adv.", "adv./prep.",
+}
+
 
 def min_cefr(levels: list[str]) -> str:
     valid = [c for c in levels if c in CEFR_ORDER]
@@ -38,18 +46,20 @@ def main() -> None:
     with dst:
         for (word, pos), cefr_list in grouped.items():
             cefr = min_cefr(cefr_list)
+            excluded = 1 if pos in EXCLUDED_POS else 0
             cur = dst.execute(
-                "INSERT OR IGNORE INTO words (word, pos, cefr) VALUES (?, ?, ?)",
-                (word, pos, cefr),
+                "INSERT OR IGNORE INTO words (word, pos, cefr, excluded) VALUES (?, ?, ?, ?)",
+                (word, pos, cefr, excluded),
             )
             if cur.rowcount:
                 words_inserted += 1
-                word_id = cur.lastrowid
-                dst.execute(
-                    "INSERT INTO schedule (word_id, due_at) VALUES (?, ?)",
-                    (word_id, now),
-                )
-                schedule_inserted += 1
+                if not excluded:
+                    word_id = cur.lastrowid
+                    dst.execute(
+                        "INSERT INTO schedule (word_id, due_at) VALUES (?, ?)",
+                        (word_id, now),
+                    )
+                    schedule_inserted += 1
 
     dst.close()
 
