@@ -238,6 +238,7 @@ _HTML = """<!DOCTYPE html>
     align-items: center;
     justify-content: center;
     padding: 24px;
+    cursor: pointer;
   }
   .card {
     text-align: center;
@@ -348,7 +349,7 @@ _HTML = """<!DOCTYPE html>
 <body>
 <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
 <div id="card-area"><div id="loading">Loading…</div></div>
-<div id="button-area">
+<div id="button-area" style="display:none">
   <div class="buttons">
     <div class="main-buttons">
       <button class="btn btn-again" onclick="rate('again')">Again</button>
@@ -396,8 +397,9 @@ function renderCard() {
     ? '<span class="badge b-new">NEW</span>'
     : `<span class="badge b-reps">×${w.repetitions}회</span>`;
 
+  cardArea.onclick = reveal;
   cardArea.innerHTML = `
-    <div class="card" id="card" onclick="reveal()" style="cursor:pointer">
+    <div class="card" id="card">
       <div class="badges">${statusBadge}</div>
       <div class="word">${esc(w.word)}</div>
       <div class="badges">
@@ -408,11 +410,11 @@ function renderCard() {
 }
 
 function reveal() {
-  const card = document.getElementById('card');
-  if (card && buttonArea.style.display === 'none') {
+  if (buttonArea.style.display === 'none') {
     buttonArea.style.display = 'block';
     stopBtn.style.display = 'block';
-    card.style.cursor = 'default';
+    cardArea.style.cursor = 'default';
+    cardArea.onclick = null;
   }
 }
 
