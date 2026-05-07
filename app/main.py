@@ -219,7 +219,7 @@ _HTML = """<!DOCTYPE html>
   }
   #progress-bar {
     height: 100%;
-    background: #6c63ff;
+    background: rgba(255,255,255,0.28);
     transition: width 0.35s ease;
     width: 0%;
   }
@@ -271,8 +271,8 @@ _HTML = """<!DOCTYPE html>
   .b-cefr-a { background: #1a2e1e; color: #6fcf97; }
   .b-cefr-b { background: #2e2614; color: #f5b942; }
   .b-cefr-c { background: #2e1a1a; color: #f78e7e; }
-  .b-new    { background: #2a2510; color: #f5c842; border: 1px solid #4a4020; }
-  .b-reps   { background: #2a1a2e; color: #e07ab8; border: 1px solid #4a2a4e; }
+  .b-new    { background: #2a1a2e; color: #e07ab8; border: 1px solid #4a2a4e; }
+  .b-reps   { background: #1e1a2e; color: #9b89f5; border: 1px solid #3a2e6a; }
   .buttons {
     display: flex;
     flex-direction: column;
