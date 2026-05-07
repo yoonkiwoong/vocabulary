@@ -240,6 +240,11 @@ _HTML = """<!DOCTYPE html>
     max-height: 30vh;
     overflow-y: auto;
   }
+  #action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
   #card-area {
     flex: 1;
     display: flex;
@@ -303,9 +308,9 @@ _HTML = """<!DOCTYPE html>
   .btn:active { transform: scale(0.97); }
   .btn:disabled { opacity: 0.5; cursor: default; }
   .btn-stop  { background: #1a1a2a; color: #7878a0; border: 1px solid #2a2a44; width: auto; padding: 8px 28px; font-size: 0.85rem; border-radius: 20px; align-self: center; }
-  .btn-again { background: #c0392b; color: #fff; flex: 1; width: auto; padding: 22px 20px; font-size: 1.1rem; }
+  .btn-again { background: #c0392b; color: #fff; flex: 1; width: auto; padding: 21px 20px; font-size: 1.1rem; }
   .btn-hint  { background: #1a2238; color: #7eb8f7; border: 1px solid #2a3a5e; }
-  .btn-good  { background: #27ae60; color: #fff; flex: 1; width: auto; padding: 22px 20px; font-size: 1.1rem; }
+  .btn-good  { background: #27ae60; color: #fff; flex: 1; width: auto; padding: 21px 20px; font-size: 1.1rem; }
   .main-buttons { display: flex; gap: 12px; width: 100%; }
   .definition {
     padding: 12px 16px;
@@ -362,7 +367,7 @@ _HTML = """<!DOCTYPE html>
   <div id="definition-wrap">
     <div class="definition" id="definition"></div>
   </div>
-  <div id="action-buttons" style="display:none">
+  <div id="action-buttons">
     <button class="btn btn-hint" id="hint-btn" onclick="hint()">Hint</button>
     <div class="main-buttons">
       <button class="btn btn-again" onclick="rate('again')">Again</button>
@@ -397,7 +402,6 @@ function resetButtons() {
   hintBtn.disabled = false;
   hintBtn.textContent = 'Hint';
   actionBtns.querySelectorAll('button').forEach(b => b.disabled = false);
-  actionBtns.style.display = 'none';
 }
 
 function renderCard() {
@@ -414,8 +418,7 @@ function renderCard() {
                   : 'b-cefr-a';
 
   bottomArea.style.display = 'flex';
-  cardArea.onclick = reveal;
-  cardArea.style.cursor = 'pointer';
+  cardArea.style.cursor = 'default';
   cardArea.innerHTML = `
     <div class="card" id="card">
       <div class="badges">${statusBadge}</div>
@@ -425,16 +428,6 @@ function renderCard() {
         <span class="badge ${cefrClass}">${esc(cefr)}</span>
       </div>
     </div>`;
-}
-
-function reveal() {
-  if (actionBtns.style.display === 'none') {
-    actionBtns.style.display = 'flex';
-    actionBtns.style.flexDirection = 'column';
-    actionBtns.style.gap = '10px';
-    cardArea.style.cursor = 'default';
-    cardArea.onclick = null;
-  }
 }
 
 function stop() {
