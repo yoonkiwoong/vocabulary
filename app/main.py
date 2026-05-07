@@ -254,7 +254,17 @@ _HTML = """<!DOCTYPE html>
     justify-content: center;
     gap: 8px;
     flex-wrap: wrap;
-    margin-bottom: 40px;
+    margin-bottom: 32px;
+  }
+  .tap-hint {
+    font-size: 0.8rem;
+    color: #333350;
+    margin-top: 8px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
   }
   .badge {
     padding: 4px 14px;
@@ -367,21 +377,32 @@ function renderCard() {
   topInfo.textContent = (idx + 1) + ' / ' + total;
 
   cardArea.innerHTML = `
-    <div class="card">
+    <div class="card" id="card" onclick="reveal()" style="cursor:pointer">
       <div class="word">${esc(w.word)}</div>
       <div class="badges">
         <span class="badge b-pos">${esc(w.pos)}</span>
         <span class="badge b-cefr">${esc(w.cefr || '?')}</span>
         ${w.is_new ? '<span class="badge b-new">NEW</span>' : ''}
       </div>
+      <div class="tap-hint" id="tap-hint">탭하여 확인</div>
       <div class="definition" id="definition"></div>
-      <div class="buttons">
-        <button class="btn btn-stop"  onclick="stop()">Stop</button>
-        <button class="btn btn-again" onclick="rate('again')">Again</button>
-        <button class="btn btn-hint"  id="hint-btn" onclick="hint()">Hint</button>
-        <button class="btn btn-good"  onclick="rate('good')">Good</button>
+      <div class="buttons" id="buttons" style="display:none">
+        <button class="btn btn-stop"  onclick="event.stopPropagation();stop()">Stop</button>
+        <button class="btn btn-again" onclick="event.stopPropagation();rate('again')">Again</button>
+        <button class="btn btn-hint"  id="hint-btn" onclick="event.stopPropagation();hint()">Hint</button>
+        <button class="btn btn-good"  onclick="event.stopPropagation();rate('good')">Good</button>
       </div>
     </div>`;
+}
+
+function reveal() {
+  const buttons = document.getElementById('buttons');
+  const tapHint = document.getElementById('tap-hint');
+  if (buttons && buttons.style.display === 'none') {
+    buttons.style.display = 'flex';
+    tapHint.style.display = 'none';
+    document.getElementById('card').style.cursor = 'default';
+  }
 }
 
 function stop() {

@@ -1,6 +1,7 @@
 import os
 import sqlite3
 from pathlib import Path
+from typing import Optional
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _LOCAL_DB = str(_REPO_ROOT / "data" / "vocabulary.db")
@@ -123,7 +124,7 @@ def fetch_all(sql: str, params: tuple = ()) -> list[dict]:
         return conn.execute(sql, params).fetchall()
 
 
-def fetch_one(sql: str, params: tuple = ()) -> dict | None:
+def fetch_one(sql: str, params: tuple = ()) -> Optional[dict]:
     if USE_TURSO:
         import libsql_client as lc
         rs = _client.execute(lc.Statement(sql, list(params)) if params else sql)
