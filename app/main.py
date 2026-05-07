@@ -272,7 +272,7 @@ _HTML = """<!DOCTYPE html>
   .b-cefr-b { background: #2e2614; color: #f5b942; }
   .b-cefr-c { background: #2e1a1a; color: #f78e7e; }
   .b-new    { background: #2a2510; color: #f5c842; border: 1px solid #4a4020; }
-  .b-reps   { background: #1e1a2e; color: #7878b0; border: 1px solid #2e2a4a; }
+  .b-reps   { background: #2a1a2e; color: #e07ab8; border: 1px solid #4a2a4e; }
   .buttons {
     display: flex;
     flex-direction: column;
@@ -294,7 +294,7 @@ _HTML = """<!DOCTYPE html>
   }
   .btn:active { transform: scale(0.97); }
   .btn:disabled { opacity: 0.5; cursor: default; }
-  .btn-stop  { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 10; background: #1e1e2e; color: #555570; border: 1px solid #2a2a3e; width: auto; padding: 8px 28px; font-size: 0.85rem; border-radius: 20px; white-space: nowrap; }
+  .btn-stop  { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 10; background: #1a1a2a; color: #7878a0; border: 1px solid #2a2a44; width: auto; padding: 8px 28px; font-size: 0.85rem; border-radius: 20px; white-space: nowrap; }
   .btn-again { background: #c0392b; color: #fff; flex: 1; width: auto; padding: 36px 20px; font-size: 1.2rem; }
   .btn-hint  { background: #1a2238; color: #7eb8f7; border: 1px solid #2a3a5e; }
   .btn-good  { background: #27ae60; color: #fff; flex: 1; width: auto; padding: 36px 20px; font-size: 1.2rem; }
@@ -404,6 +404,7 @@ function renderCard() {
                   : cefr.startsWith('C') ? 'b-cefr-c'
                   : 'b-cefr-a';
 
+  stopBtn.style.display = 'block';
   cardArea.onclick = reveal;
   cardArea.innerHTML = `
     <div class="card" id="card">
@@ -419,7 +420,6 @@ function renderCard() {
 function reveal() {
   if (buttonArea.style.display === 'none') {
     buttonArea.style.display = 'block';
-    stopBtn.style.display = 'block';
     cardArea.style.cursor = 'default';
     cardArea.onclick = null;
   }
@@ -463,7 +463,6 @@ async function rate(rating) {
   if (rating === 'good') goodCount++; else againCount++;
   idx++;
   buttonArea.style.display = 'none';
-  stopBtn.style.display = 'none';
   resetButtons();
   idx >= words.length ? renderDone() : renderCard();
 }
