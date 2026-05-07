@@ -223,14 +223,22 @@ _HTML = """<!DOCTYPE html>
     transition: width 0.35s ease;
     width: 0%;
   }
-  #button-area {
+  #bottom-area {
     position: fixed;
-    top: 50%;
+    bottom: 0;
     left: 0;
     right: 0;
-    margin-top: -82px;
-    padding: 0 24px;
-    display: none;
+    padding: 0 24px calc(28px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  #definition-wrap {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    max-height: 30vh;
+    overflow-y: auto;
   }
   #card-area {
     flex: 1;
@@ -294,14 +302,13 @@ _HTML = """<!DOCTYPE html>
   }
   .btn:active { transform: scale(0.97); }
   .btn:disabled { opacity: 0.5; cursor: default; }
-  .btn-stop  { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 10; background: #1a1a2a; color: #7878a0; border: 1px solid #2a2a44; width: auto; padding: 8px 28px; font-size: 0.85rem; border-radius: 20px; white-space: nowrap; }
-  .btn-again { background: #c0392b; color: #fff; flex: 1; width: auto; padding: 36px 20px; font-size: 1.2rem; }
+  .btn-stop  { background: #1a1a2a; color: #7878a0; border: 1px solid #2a2a44; width: 100%; padding: 10px; font-size: 0.85rem; border-radius: 10px; }
+  .btn-again { background: #c0392b; color: #fff; flex: 1; width: auto; padding: 22px 20px; font-size: 1.1rem; }
   .btn-hint  { background: #1a2238; color: #7eb8f7; border: 1px solid #2a3a5e; }
-  .btn-good  { background: #27ae60; color: #fff; flex: 1; width: auto; padding: 36px 20px; font-size: 1.2rem; }
-  .main-buttons { display: flex; gap: 12px; width: 100%; max-width: 320px; margin: 0 auto 10px; }
+  .btn-good  { background: #27ae60; color: #fff; flex: 1; width: auto; padding: 22px 20px; font-size: 1.1rem; }
+  .main-buttons { display: flex; gap: 12px; width: 100%; }
   .definition {
-    margin: 10px 0 0;
-    padding: 14px 18px;
+    padding: 12px 16px;
     background: #13131f;
     border-left: 3px solid rgba(255,255,255,0.28);
     border-radius: 0 8px 8px 0;
@@ -351,32 +358,33 @@ _HTML = """<!DOCTYPE html>
 <body>
 <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
 <div id="card-area"><div id="loading">Loading…</div></div>
-<div id="button-area" style="display:none">
-  <div class="buttons">
+<div id="bottom-area" style="display:none">
+  <div id="definition-wrap">
+    <div class="definition" id="definition"></div>
+  </div>
+  <div id="action-buttons" style="display:none">
+    <button class="btn btn-hint" id="hint-btn" onclick="hint()">Hint</button>
     <div class="main-buttons">
       <button class="btn btn-again" onclick="rate('again')">Again</button>
       <button class="btn btn-good"  onclick="rate('good')">Good</button>
     </div>
-    <button class="btn btn-hint" id="hint-btn" onclick="hint()">Hint</button>
-    <div class="definition" id="definition"></div>
   </div>
+  <button class="btn btn-stop" id="stop-btn" onclick="stop()">Stop</button>
 </div>
-<button class="btn btn-stop" id="stop-btn" onclick="stop()" style="display:none">Stop</button>
 
 <script>
 let words = [], idx = 0, goodCount = 0, againCount = 0;
 
-const pbar = document.getElementById('progress-bar');
-const buttonArea = document.getElementById('button-area');
-const stopBtn = document.getElementById('stop-btn');
-const cardArea = document.getElementById('card-area');
+const pbar        = document.getElementById('progress-bar');
+const bottomArea  = document.getElementById('bottom-area');
+const actionBtns  = document.getElementById('action-buttons');
+const cardArea    = document.getElementById('card-area');
 
 async function load() {
   const res = await fetch('/api/words');
   words = await res.json();
   idx = goodCount = againCount = 0;
-  buttonArea.style.display = 'none';
-  stopBtn.style.display = 'none';
+  bottomArea.style.display = 'none';
   resetButtons();
   words.length === 0 ? renderEmpty() : renderCard();
 }
@@ -388,7 +396,8 @@ function resetButtons() {
   const hintBtn = document.getElementById('hint-btn');
   hintBtn.disabled = false;
   hintBtn.textContent = 'Hint';
-  buttonArea.querySelectorAll('button').forEach(b => b.disabled = false);
+  actionBtns.querySelectorAll('button').forEach(b => b.disabled = false);
+  actionBtns.style.display = 'none';
 }
 
 function renderCard() {
@@ -404,8 +413,9 @@ function renderCard() {
                   : cefr.startsWith('C') ? 'b-cefr-c'
                   : 'b-cefr-a';
 
-  stopBtn.style.display = 'block';
+  bottomArea.style.display = 'flex';
   cardArea.onclick = reveal;
+  cardArea.style.cursor = 'pointer';
   cardArea.innerHTML = `
     <div class="card" id="card">
       <div class="badges">${statusBadge}</div>
@@ -418,8 +428,10 @@ function renderCard() {
 }
 
 function reveal() {
-  if (buttonArea.style.display === 'none') {
-    buttonArea.style.display = 'block';
+  if (actionBtns.style.display === 'none') {
+    actionBtns.style.display = 'flex';
+    actionBtns.style.flexDirection = 'column';
+    actionBtns.style.gap = '10px';
     cardArea.style.cursor = 'default';
     cardArea.onclick = null;
   }
@@ -454,7 +466,7 @@ async function hint() {
 
 async function rate(rating) {
   const w = words[idx];
-  buttonArea.querySelectorAll('button').forEach(b => b.disabled = true);
+  actionBtns.querySelectorAll('button').forEach(b => b.disabled = true);
   await fetch('/api/review', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -462,15 +474,14 @@ async function rate(rating) {
   });
   if (rating === 'good') goodCount++; else againCount++;
   idx++;
-  buttonArea.style.display = 'none';
   resetButtons();
   idx >= words.length ? renderDone() : renderCard();
 }
 
 function renderDone() {
   pbar.style.width = '100%';
-  buttonArea.style.display = 'none';
-  stopBtn.style.display = 'none';
+  bottomArea.style.display = 'none';
+  cardArea.onclick = null;
   cardArea.innerHTML = `
     <div class="card">
       <div class="done-title">Session Complete</div>
@@ -485,8 +496,8 @@ function renderDone() {
 
 function renderEmpty() {
   pbar.style.width = '100%';
-  buttonArea.style.display = 'none';
-  stopBtn.style.display = 'none';
+  bottomArea.style.display = 'none';
+  cardArea.onclick = null;
   cardArea.innerHTML = `
     <div class="card">
       <div class="done-title">All caught up!</div>
