@@ -223,13 +223,14 @@ _HTML = """<!DOCTYPE html>
     transition: width 0.35s ease;
     width: 0%;
   }
-  #word-status {
-    padding: 12px 20px;
-    text-align: right;
-    font-size: 0.8rem;
-    color: #555570;
-    flex-shrink: 0;
-    min-height: 36px;
+  #button-area {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px 24px 36px;
+    background: linear-gradient(transparent, #0f0f1a 22%);
+    display: none;
   }
   #card-area {
     flex: 1;
@@ -255,17 +256,6 @@ _HTML = """<!DOCTYPE html>
     justify-content: center;
     gap: 8px;
     flex-wrap: wrap;
-    margin-bottom: 32px;
-  }
-  .tap-hint {
-    font-size: 0.8rem;
-    color: #333350;
-    margin-top: 8px;
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 1; }
   }
   .badge {
     padding: 4px 14px;
@@ -278,6 +268,7 @@ _HTML = """<!DOCTYPE html>
   .b-pos  { background: #1e2d4a; color: #7eb8f7; }
   .b-cefr { background: #1a2e1e; color: #6fcf97; }
   .b-new  { background: #2e1e1a; color: #f7a87e; }
+  .b-reps { background: #1e1e2e; color: #555570; border: 1px solid #2a2a3e; }
   .buttons {
     display: flex;
     flex-direction: column;
@@ -305,7 +296,7 @@ _HTML = """<!DOCTYPE html>
   .btn-good  { background: #27ae60; color: #fff; flex: 1; width: auto; aspect-ratio: 1 / 1; font-size: 1.3rem; }
   .main-buttons { display: flex; gap: 12px; width: 100%; max-width: 320px; margin: 0 auto 10px; }
   .definition {
-    margin: 0 0 20px;
+    margin: 10px 0 0;
     padding: 14px 18px;
     background: #13131f;
     border-left: 3px solid #6c63ff;
@@ -355,15 +346,24 @@ _HTML = """<!DOCTYPE html>
 </head>
 <body>
 <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
-<div id="word-status"></div>
 <div id="card-area"><div id="loading">Loading…</div></div>
+<div id="button-area">
+  <div class="buttons">
+    <div class="main-buttons">
+      <button class="btn btn-again" onclick="rate('again')">Again</button>
+      <button class="btn btn-good"  onclick="rate('good')">Good</button>
+    </div>
+    <button class="btn btn-hint" id="hint-btn" onclick="hint()">Hint</button>
+    <div class="definition" id="definition"></div>
+  </div>
+</div>
 <button class="btn btn-stop" id="stop-btn" onclick="stop()" style="display:none">✕ Stop</button>
 
 <script>
 let words = [], idx = 0, goodCount = 0, againCount = 0;
 
 const pbar = document.getElementById('progress-bar');
-const wordStatus = document.getElementById('word-status');
+const buttonArea = document.getElementById('button-area');
 const stopBtn = document.getElementById('stop-btn');
 const cardArea = document.getElementById('card-area');
 
@@ -371,43 +371,47 @@ async function load() {
   const res = await fetch('/api/words');
   words = await res.json();
   idx = goodCount = againCount = 0;
+  buttonArea.style.display = 'none';
   stopBtn.style.display = 'none';
+  resetButtons();
   words.length === 0 ? renderEmpty() : renderCard();
+}
+
+function resetButtons() {
+  const defEl = document.getElementById('definition');
+  defEl.style.display = 'none';
+  defEl.textContent = '';
+  const hintBtn = document.getElementById('hint-btn');
+  hintBtn.disabled = false;
+  hintBtn.textContent = 'Hint';
+  buttonArea.querySelectorAll('button').forEach(b => b.disabled = false);
 }
 
 function renderCard() {
   const w = words[idx];
   const total = words.length;
   pbar.style.width = (idx / total * 100) + '%';
-  wordStatus.textContent = w.is_new ? 'NEW' : '×' + w.repetitions + '회';
+  const statusBadge = w.is_new
+    ? '<span class="badge b-new">NEW</span>'
+    : `<span class="badge b-reps">×${w.repetitions}회</span>`;
 
   cardArea.innerHTML = `
     <div class="card" id="card" onclick="reveal()" style="cursor:pointer">
       <div class="word">${esc(w.word)}</div>
       <div class="badges">
+        ${statusBadge}
         <span class="badge b-pos">${esc(w.pos)}</span>
         <span class="badge b-cefr">${esc(w.cefr || '?')}</span>
-      </div>
-      <div class="tap-hint" id="tap-hint">탭하여 확인</div>
-      <div class="buttons" id="buttons" style="display:none">
-        <div class="main-buttons">
-          <button class="btn btn-again" onclick="event.stopPropagation();rate('again')">Again</button>
-          <button class="btn btn-good"  onclick="event.stopPropagation();rate('good')">Good</button>
-        </div>
-        <button class="btn btn-hint" id="hint-btn" onclick="event.stopPropagation();hint()">Hint</button>
-        <div class="definition" id="definition"></div>
       </div>
     </div>`;
 }
 
 function reveal() {
-  const buttons = document.getElementById('buttons');
-  const tapHint = document.getElementById('tap-hint');
-  if (buttons && buttons.style.display === 'none') {
-    buttons.style.display = 'flex';
-    tapHint.style.display = 'none';
+  const card = document.getElementById('card');
+  if (card && buttonArea.style.display === 'none') {
+    buttonArea.style.display = 'block';
     stopBtn.style.display = 'block';
-    document.getElementById('card').style.cursor = 'default';
+    card.style.cursor = 'default';
   }
 }
 
@@ -440,7 +444,7 @@ async function hint() {
 
 async function rate(rating) {
   const w = words[idx];
-  cardArea.querySelector('.buttons').querySelectorAll('button').forEach(b => b.disabled = true);
+  buttonArea.querySelectorAll('button').forEach(b => b.disabled = true);
   await fetch('/api/review', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -448,12 +452,15 @@ async function rate(rating) {
   });
   if (rating === 'good') goodCount++; else againCount++;
   idx++;
+  buttonArea.style.display = 'none';
+  stopBtn.style.display = 'none';
+  resetButtons();
   idx >= words.length ? renderDone() : renderCard();
 }
 
 function renderDone() {
   pbar.style.width = '100%';
-  wordStatus.textContent = '';
+  buttonArea.style.display = 'none';
   stopBtn.style.display = 'none';
   cardArea.innerHTML = `
     <div class="card">
@@ -469,7 +476,7 @@ function renderDone() {
 
 function renderEmpty() {
   pbar.style.width = '100%';
-  wordStatus.textContent = '';
+  buttonArea.style.display = 'none';
   stopBtn.style.display = 'none';
   cardArea.innerHTML = `
     <div class="card">
