@@ -225,11 +225,11 @@ _HTML = """<!DOCTYPE html>
   }
   #button-area {
     position: fixed;
-    bottom: 0;
+    top: 50%;
     left: 0;
     right: 0;
-    padding: 20px 24px 36px;
-    background: linear-gradient(transparent, #0f0f1a 22%);
+    transform: translateY(-50%);
+    padding: 0 24px;
     display: none;
   }
   #card-area {
