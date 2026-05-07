@@ -13,7 +13,8 @@ _client = None
 _DDL = [
     """CREATE TABLE IF NOT EXISTS words (
         id INTEGER PRIMARY KEY, word TEXT NOT NULL, pos TEXT NOT NULL,
-        cefr TEXT, excluded INTEGER NOT NULL DEFAULT 0, UNIQUE(word, pos)
+        cefr TEXT, excluded INTEGER NOT NULL DEFAULT 0,
+        definition TEXT, UNIQUE(word, pos)
     )""",
     """CREATE TABLE IF NOT EXISTS schedule (
         word_id INTEGER PRIMARY KEY REFERENCES words(id),
@@ -47,6 +48,11 @@ def init() -> None:
     _client = lc.create_client_sync(url=http_url, auth_token=_TURSO_TOKEN)
 
     _client.batch([lc.Statement(ddl) for ddl in _DDL])
+
+    try:
+        _client.execute("ALTER TABLE words ADD COLUMN definition TEXT")
+    except Exception:
+        pass  # column already exists
 
     rs = _client.execute("SELECT COUNT(*) FROM words")
     if rs.rows[0][0] == 0:

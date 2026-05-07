@@ -1,3 +1,6 @@
+import json
+import urllib.parse
+import urllib.request
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Optional
@@ -162,6 +165,33 @@ def post_review(req: ReviewRequest):
     return {"ok": True, "next_due": due_iso}
 
 
+@app.get("/api/hint/{word_id}")
+def get_hint(word_id: int):
+    row = db.fetch_one("SELECT word, definition FROM words WHERE id = ?", (word_id,))
+    if row is None:
+        raise HTTPException(404, f"word_id {word_id} not found")
+
+    if row["definition"]:
+        return {"definition": row["definition"]}
+
+    word = row["word"]
+    definition = _fetch_definition(word)
+    if definition:
+        db.execute("UPDATE words SET definition = ? WHERE id = ?", (definition, word_id))
+    return {"definition": definition}
+
+
+def _fetch_definition(word: str) -> Optional[str]:
+    url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{urllib.parse.quote(word)}"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "vocabulary-app/1.0"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+        return data[0]["meanings"][0]["definitions"][0]["definition"]
+    except Exception:
+        return None
+
+
 # ── UI ────────────────────────────────────────────────────────────────────────
 
 _HTML = """<!DOCTYPE html>
@@ -239,11 +269,14 @@ _HTML = """<!DOCTYPE html>
   .b-new  { background: #2e1e1a; color: #f7a87e; }
   .buttons {
     display: flex;
-    gap: 16px;
-    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
   }
   .btn {
-    padding: 14px 40px;
+    padding: 14px 20px;
     border: none;
     border-radius: 10px;
     font-size: 1rem;
@@ -251,10 +284,26 @@ _HTML = """<!DOCTYPE html>
     cursor: pointer;
     transition: transform 0.1s, opacity 0.1s;
     letter-spacing: 0.02em;
+    width: 100%;
   }
-  .btn:active { transform: scale(0.96); }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn-stop  { background: #1e1e2e; color: #555570; border: 1px solid #2a2a3e; }
   .btn-again { background: #c0392b; color: #fff; }
+  .btn-hint  { background: #1a2e2e; color: #6fcfcf; border: 1px solid #2a4a4a; }
   .btn-good  { background: #27ae60; color: #fff; }
+  .definition {
+    margin: 0 0 20px;
+    padding: 14px 18px;
+    background: #13131f;
+    border-left: 3px solid #6c63ff;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #b0b0cc;
+    text-align: left;
+    display: none;
+  }
   .done-title {
     font-size: 1.8rem;
     font-weight: 700;
@@ -325,11 +374,41 @@ function renderCard() {
         <span class="badge b-cefr">${esc(w.cefr || '?')}</span>
         ${w.is_new ? '<span class="badge b-new">NEW</span>' : ''}
       </div>
+      <div class="definition" id="definition"></div>
       <div class="buttons">
+        <button class="btn btn-stop"  onclick="stop()">Stop</button>
         <button class="btn btn-again" onclick="rate('again')">Again</button>
+        <button class="btn btn-hint"  id="hint-btn" onclick="hint()">Hint</button>
         <button class="btn btn-good"  onclick="rate('good')">Good</button>
       </div>
     </div>`;
+}
+
+function stop() {
+  renderDone();
+}
+
+async function hint() {
+  const w = words[idx];
+  const hintBtn = document.getElementById('hint-btn');
+  hintBtn.disabled = true;
+  hintBtn.textContent = '…';
+
+  try {
+    const res = await fetch('/api/hint/' + w.id);
+    const data = await res.json();
+    const defEl = document.getElementById('definition');
+    if (data.definition) {
+      defEl.textContent = data.definition;
+      defEl.style.display = 'block';
+    } else {
+      defEl.textContent = 'No definition available.';
+      defEl.style.display = 'block';
+    }
+  } catch (_) {
+    hintBtn.disabled = false;
+  }
+  hintBtn.textContent = 'Hint';
 }
 
 async function rate(rating) {
