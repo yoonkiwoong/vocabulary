@@ -267,10 +267,12 @@ _HTML = """<!DOCTYPE html>
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
-  .b-pos  { background: #1e2d4a; color: #7eb8f7; }
-  .b-cefr { background: #1a2e1e; color: #6fcf97; }
-  .b-new  { background: #2e1e1a; color: #f7a87e; }
-  .b-reps { background: #252538; color: #7878a0; border: 1px solid #3a3a58; }
+  .b-pos    { background: #1e2d4a; color: #7eb8f7; }
+  .b-cefr-a { background: #1a2e1e; color: #6fcf97; }
+  .b-cefr-b { background: #2e2614; color: #f5b942; }
+  .b-cefr-c { background: #2e1a1a; color: #f78e7e; }
+  .b-new    { background: #231e3a; color: #a89cf7; border: 1px solid #3a3060; }
+  .b-reps   { background: #1e1a2e; color: #7878b0; border: 1px solid #2e2a4a; }
   .buttons {
     display: flex;
     flex-direction: column;
@@ -396,6 +398,11 @@ function renderCard() {
   const statusBadge = w.is_new
     ? '<span class="badge b-new">NEW</span>'
     : `<span class="badge b-reps">×${w.repetitions}</span>`;
+  const cefr = w.cefr || '?';
+  const cefrClass = cefr.startsWith('A') ? 'b-cefr-a'
+                  : cefr.startsWith('B') ? 'b-cefr-b'
+                  : cefr.startsWith('C') ? 'b-cefr-c'
+                  : 'b-cefr-a';
 
   cardArea.onclick = reveal;
   cardArea.innerHTML = `
@@ -404,7 +411,7 @@ function renderCard() {
       <div class="word">${esc(w.word)}</div>
       <div class="badges">
         <span class="badge b-pos">${esc(w.pos)}</span>
-        <span class="badge b-cefr">${esc(w.cefr || '?')}</span>
+        <span class="badge ${cefrClass}">${esc(cefr)}</span>
       </div>
     </div>`;
 }
