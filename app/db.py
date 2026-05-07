@@ -43,6 +43,11 @@ def _chunked(lst, n):
 def init() -> None:
     global _client
     if not USE_TURSO:
+        with _sqlite_conn() as conn:
+            try:
+                conn.execute("ALTER TABLE words ADD COLUMN definition TEXT")
+            except Exception:
+                pass  # column already exists
         return
     import libsql_client as lc
     http_url = _TURSO_URL.replace("libsql://", "https://", 1)
