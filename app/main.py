@@ -331,8 +331,8 @@ _HTML = """<!DOCTYPE html>
   .num-good  { color: #27ae60; }
   .num-again { color: #c0392b; }
   .btn-restart {
-    background: #6c63ff;
-    color: #fff;
+    background: #e8e8f0;
+    color: #0f0f1a;
     border: none;
     padding: 13px 36px;
     border-radius: 10px;
@@ -476,8 +476,8 @@ function renderDone() {
       <div class="done-title">Session Complete</div>
       <div class="done-sub">${goodCount + againCount} words reviewed</div>
       <div class="stats">
-        <div><div class="stat-num num-good">${goodCount}</div><div class="stat-label">Good</div></div>
         <div><div class="stat-num num-again">${againCount}</div><div class="stat-label">Again</div></div>
+        <div><div class="stat-num num-good">${goodCount}</div><div class="stat-label">Good</div></div>
       </div>
       <button class="btn-restart" onclick="load()">New Session</button>
     </div>`;
