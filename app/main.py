@@ -271,7 +271,7 @@ _HTML = """<!DOCTYPE html>
   .b-cefr-a { background: #1a2e1e; color: #6fcf97; }
   .b-cefr-b { background: #2e2614; color: #f5b942; }
   .b-cefr-c { background: #2e1a1a; color: #f78e7e; }
-  .b-new    { background: #231e3a; color: #a89cf7; border: 1px solid #3a3060; }
+  .b-new    { background: #2a2510; color: #f5c842; border: 1px solid #4a4020; }
   .b-reps   { background: #1e1a2e; color: #7878b0; border: 1px solid #2e2a4a; }
   .buttons {
     display: flex;
@@ -294,7 +294,7 @@ _HTML = """<!DOCTYPE html>
   }
   .btn:active { transform: scale(0.97); }
   .btn:disabled { opacity: 0.5; cursor: default; }
-  .btn-stop  { position: fixed; top: 14px; left: 16px; z-index: 10; background: #1e1e2e; color: #555570; border: 1px solid #2a2a3e; width: auto; padding: 8px 14px; font-size: 0.85rem; }
+  .btn-stop  { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 10; background: #1e1e2e; color: #555570; border: 1px solid #2a2a3e; width: auto; padding: 8px 28px; font-size: 0.85rem; border-radius: 20px; white-space: nowrap; }
   .btn-again { background: #c0392b; color: #fff; flex: 1; width: auto; padding: 36px 20px; font-size: 1.2rem; }
   .btn-hint  { background: #1a2238; color: #7eb8f7; border: 1px solid #2a3a5e; }
   .btn-good  { background: #27ae60; color: #fff; flex: 1; width: auto; padding: 36px 20px; font-size: 1.2rem; }
