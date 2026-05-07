@@ -256,6 +256,7 @@ _HTML = """<!DOCTYPE html>
     justify-content: center;
     gap: 8px;
     flex-wrap: wrap;
+    margin-bottom: 12px;
   }
   .badge {
     padding: 4px 14px;
@@ -397,9 +398,9 @@ function renderCard() {
 
   cardArea.innerHTML = `
     <div class="card" id="card" onclick="reveal()" style="cursor:pointer">
+      <div class="badges">${statusBadge}</div>
       <div class="word">${esc(w.word)}</div>
       <div class="badges">
-        ${statusBadge}
         <span class="badge b-pos">${esc(w.pos)}</span>
         <span class="badge b-cefr">${esc(w.cefr || '?')}</span>
       </div>
