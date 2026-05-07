@@ -293,9 +293,9 @@ _HTML = """<!DOCTYPE html>
   .btn:active { transform: scale(0.97); }
   .btn:disabled { opacity: 0.5; cursor: default; }
   .btn-stop  { position: fixed; top: 14px; left: 16px; z-index: 10; background: #1e1e2e; color: #555570; border: 1px solid #2a2a3e; width: auto; padding: 8px 14px; font-size: 0.85rem; }
-  .btn-again { background: #c0392b; color: #fff; flex: 1; width: auto; aspect-ratio: 1 / 1; font-size: 1.3rem; }
+  .btn-again { background: #c0392b; color: #fff; flex: 1; width: auto; padding: 36px 20px; font-size: 1.2rem; }
   .btn-hint  { background: #1a2e2e; color: #6fcfcf; border: 1px solid #2a4a4a; }
-  .btn-good  { background: #27ae60; color: #fff; flex: 1; width: auto; aspect-ratio: 1 / 1; font-size: 1.3rem; }
+  .btn-good  { background: #27ae60; color: #fff; flex: 1; width: auto; padding: 36px 20px; font-size: 1.2rem; }
   .main-buttons { display: flex; gap: 12px; width: 100%; max-width: 320px; margin: 0 auto 10px; }
   .definition {
     margin: 10px 0 0;
