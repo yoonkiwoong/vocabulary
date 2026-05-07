@@ -235,9 +235,9 @@ _HTML = """<!DOCTYPE html>
   #card-area {
     flex: 1;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 24px;
+    padding: 20vh 24px 0;
     cursor: pointer;
   }
   .card {
@@ -270,7 +270,7 @@ _HTML = """<!DOCTYPE html>
   .b-pos  { background: #1e2d4a; color: #7eb8f7; }
   .b-cefr { background: #1a2e1e; color: #6fcf97; }
   .b-new  { background: #2e1e1a; color: #f7a87e; }
-  .b-reps { background: #1e1e2e; color: #555570; border: 1px solid #2a2a3e; }
+  .b-reps { background: #252538; color: #7878a0; border: 1px solid #3a3a58; }
   .buttons {
     display: flex;
     flex-direction: column;
@@ -395,7 +395,7 @@ function renderCard() {
   pbar.style.width = (idx / total * 100) + '%';
   const statusBadge = w.is_new
     ? '<span class="badge b-new">NEW</span>'
-    : `<span class="badge b-reps">×${w.repetitions}회</span>`;
+    : `<span class="badge b-reps">×${w.repetitions}</span>`;
 
   cardArea.onclick = reveal;
   cardArea.innerHTML = `
