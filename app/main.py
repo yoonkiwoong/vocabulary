@@ -331,9 +331,9 @@ _HTML = """<!DOCTYPE html>
   .num-good  { color: #27ae60; }
   .num-again { color: #c0392b; }
   .btn-restart {
-    background: #e8e8f0;
-    color: #0f0f1a;
-    border: none;
+    background: #1a1a2e;
+    color: #c8c8e0;
+    border: 1px solid #2a2a44;
     padding: 13px 36px;
     border-radius: 10px;
     font-size: 1rem;
