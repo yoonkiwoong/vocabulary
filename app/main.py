@@ -228,7 +228,7 @@ _HTML = """<!DOCTYPE html>
     top: 50%;
     left: 0;
     right: 0;
-    transform: translateY(-50%);
+    margin-top: -82px;
     padding: 0 24px;
     display: none;
   }
@@ -303,7 +303,7 @@ _HTML = """<!DOCTYPE html>
     margin: 10px 0 0;
     padding: 14px 18px;
     background: #13131f;
-    border-left: 3px solid #6c63ff;
+    border-left: 3px solid rgba(255,255,255,0.28);
     border-radius: 0 8px 8px 0;
     font-size: 0.9rem;
     line-height: 1.6;
