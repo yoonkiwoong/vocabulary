@@ -78,6 +78,7 @@ def get_words(limit: int = 20):
         """
         SELECT w.id, w.word, w.pos, w.cefr,
                s.due_at,
+               s.reps AS repetitions,
                CASE WHEN s.learned_at IS NULL THEN 1 ELSE 0 END AS is_new
         FROM words AS w
         JOIN schedule AS s ON w.id = s.word_id
@@ -222,20 +223,22 @@ _HTML = """<!DOCTYPE html>
     transition: width 0.35s ease;
     width: 0%;
   }
-  #top-info {
-    padding: 12px 20px;
-    text-align: right;
-    font-size: 0.8rem;
-    color: #555570;
-    flex-shrink: 0;
-    min-height: 36px;
+  #button-area {
+    position: fixed;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
+    padding: 0 24px;
+    display: none;
   }
   #card-area {
     flex: 1;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 24px;
+    padding: 12vh 24px 0;
+    cursor: pointer;
   }
   .card {
     text-align: center;
@@ -254,17 +257,7 @@ _HTML = """<!DOCTYPE html>
     justify-content: center;
     gap: 8px;
     flex-wrap: wrap;
-    margin-bottom: 32px;
-  }
-  .tap-hint {
-    font-size: 0.8rem;
-    color: #333350;
-    margin-top: 8px;
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 1; }
+    margin-bottom: 12px;
   }
   .badge {
     padding: 4px 14px;
@@ -274,9 +267,12 @@ _HTML = """<!DOCTYPE html>
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
-  .b-pos  { background: #1e2d4a; color: #7eb8f7; }
-  .b-cefr { background: #1a2e1e; color: #6fcf97; }
-  .b-new  { background: #2e1e1a; color: #f7a87e; }
+  .b-pos    { background: #1e2d4a; color: #7eb8f7; }
+  .b-cefr-a { background: #1a2e1e; color: #6fcf97; }
+  .b-cefr-b { background: #2e2614; color: #f5b942; }
+  .b-cefr-c { background: #2e1a1a; color: #f78e7e; }
+  .b-new    { background: #2a2510; color: #f5c842; border: 1px solid #4a4020; }
+  .b-reps   { background: #2a1a2e; color: #e07ab8; border: 1px solid #4a2a4e; }
   .buttons {
     display: flex;
     flex-direction: column;
@@ -298,12 +294,13 @@ _HTML = """<!DOCTYPE html>
   }
   .btn:active { transform: scale(0.97); }
   .btn:disabled { opacity: 0.5; cursor: default; }
-  .btn-stop  { background: #1e1e2e; color: #555570; border: 1px solid #2a2a3e; }
-  .btn-again { background: #c0392b; color: #fff; }
-  .btn-hint  { background: #1a2e2e; color: #6fcfcf; border: 1px solid #2a4a4a; }
-  .btn-good  { background: #27ae60; color: #fff; }
+  .btn-stop  { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 10; background: #1a1a2a; color: #7878a0; border: 1px solid #2a2a44; width: auto; padding: 8px 28px; font-size: 0.85rem; border-radius: 20px; white-space: nowrap; }
+  .btn-again { background: #c0392b; color: #fff; flex: 1; width: auto; padding: 36px 20px; font-size: 1.2rem; }
+  .btn-hint  { background: #1a2238; color: #7eb8f7; border: 1px solid #2a3a5e; }
+  .btn-good  { background: #27ae60; color: #fff; flex: 1; width: auto; padding: 36px 20px; font-size: 1.2rem; }
+  .main-buttons { display: flex; gap: 12px; width: 100%; max-width: 320px; margin: 0 auto 10px; }
   .definition {
-    margin: 0 0 20px;
+    margin: 10px 0 0;
     padding: 14px 18px;
     background: #13131f;
     border-left: 3px solid #6c63ff;
@@ -353,55 +350,78 @@ _HTML = """<!DOCTYPE html>
 </head>
 <body>
 <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
-<div id="top-info"></div>
 <div id="card-area"><div id="loading">Loading…</div></div>
+<div id="button-area" style="display:none">
+  <div class="buttons">
+    <div class="main-buttons">
+      <button class="btn btn-again" onclick="rate('again')">Again</button>
+      <button class="btn btn-good"  onclick="rate('good')">Good</button>
+    </div>
+    <button class="btn btn-hint" id="hint-btn" onclick="hint()">Hint</button>
+    <div class="definition" id="definition"></div>
+  </div>
+</div>
+<button class="btn btn-stop" id="stop-btn" onclick="stop()" style="display:none">Stop</button>
 
 <script>
 let words = [], idx = 0, goodCount = 0, againCount = 0;
 
 const pbar = document.getElementById('progress-bar');
-const topInfo = document.getElementById('top-info');
+const buttonArea = document.getElementById('button-area');
+const stopBtn = document.getElementById('stop-btn');
 const cardArea = document.getElementById('card-area');
 
 async function load() {
   const res = await fetch('/api/words');
   words = await res.json();
   idx = goodCount = againCount = 0;
+  buttonArea.style.display = 'none';
+  stopBtn.style.display = 'none';
+  resetButtons();
   words.length === 0 ? renderEmpty() : renderCard();
+}
+
+function resetButtons() {
+  const defEl = document.getElementById('definition');
+  defEl.style.display = 'none';
+  defEl.textContent = '';
+  const hintBtn = document.getElementById('hint-btn');
+  hintBtn.disabled = false;
+  hintBtn.textContent = 'Hint';
+  buttonArea.querySelectorAll('button').forEach(b => b.disabled = false);
 }
 
 function renderCard() {
   const w = words[idx];
   const total = words.length;
   pbar.style.width = (idx / total * 100) + '%';
-  topInfo.textContent = (idx + 1) + ' / ' + total;
+  const statusBadge = w.is_new
+    ? '<span class="badge b-new">NEW</span>'
+    : `<span class="badge b-reps">×${w.repetitions}</span>`;
+  const cefr = w.cefr || '?';
+  const cefrClass = cefr.startsWith('A') ? 'b-cefr-a'
+                  : cefr.startsWith('B') ? 'b-cefr-b'
+                  : cefr.startsWith('C') ? 'b-cefr-c'
+                  : 'b-cefr-a';
 
+  stopBtn.style.display = 'block';
+  cardArea.onclick = reveal;
   cardArea.innerHTML = `
-    <div class="card" id="card" onclick="reveal()" style="cursor:pointer">
+    <div class="card" id="card">
+      <div class="badges">${statusBadge}</div>
       <div class="word">${esc(w.word)}</div>
       <div class="badges">
         <span class="badge b-pos">${esc(w.pos)}</span>
-        <span class="badge b-cefr">${esc(w.cefr || '?')}</span>
-        ${w.is_new ? '<span class="badge b-new">NEW</span>' : ''}
-      </div>
-      <div class="tap-hint" id="tap-hint">탭하여 확인</div>
-      <div class="definition" id="definition"></div>
-      <div class="buttons" id="buttons" style="display:none">
-        <button class="btn btn-stop"  onclick="event.stopPropagation();stop()">Stop</button>
-        <button class="btn btn-again" onclick="event.stopPropagation();rate('again')">Again</button>
-        <button class="btn btn-hint"  id="hint-btn" onclick="event.stopPropagation();hint()">Hint</button>
-        <button class="btn btn-good"  onclick="event.stopPropagation();rate('good')">Good</button>
+        <span class="badge ${cefrClass}">${esc(cefr)}</span>
       </div>
     </div>`;
 }
 
 function reveal() {
-  const buttons = document.getElementById('buttons');
-  const tapHint = document.getElementById('tap-hint');
-  if (buttons && buttons.style.display === 'none') {
-    buttons.style.display = 'flex';
-    tapHint.style.display = 'none';
-    document.getElementById('card').style.cursor = 'default';
+  if (buttonArea.style.display === 'none') {
+    buttonArea.style.display = 'block';
+    cardArea.style.cursor = 'default';
+    cardArea.onclick = null;
   }
 }
 
@@ -434,7 +454,7 @@ async function hint() {
 
 async function rate(rating) {
   const w = words[idx];
-  cardArea.querySelector('.buttons').querySelectorAll('button').forEach(b => b.disabled = true);
+  buttonArea.querySelectorAll('button').forEach(b => b.disabled = true);
   await fetch('/api/review', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -442,12 +462,15 @@ async function rate(rating) {
   });
   if (rating === 'good') goodCount++; else againCount++;
   idx++;
+  buttonArea.style.display = 'none';
+  resetButtons();
   idx >= words.length ? renderDone() : renderCard();
 }
 
 function renderDone() {
   pbar.style.width = '100%';
-  topInfo.textContent = '';
+  buttonArea.style.display = 'none';
+  stopBtn.style.display = 'none';
   cardArea.innerHTML = `
     <div class="card">
       <div class="done-title">Session Complete</div>
@@ -462,7 +485,8 @@ function renderDone() {
 
 function renderEmpty() {
   pbar.style.width = '100%';
-  topInfo.textContent = '';
+  buttonArea.style.display = 'none';
+  stopBtn.style.display = 'none';
   cardArea.innerHTML = `
     <div class="card">
       <div class="done-title">All caught up!</div>
