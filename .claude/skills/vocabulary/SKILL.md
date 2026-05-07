@@ -41,7 +41,11 @@ If `data/vocabulary.db` is missing, or the `words` table is still empty, stop an
    - Do not continue automatically.
    - Do not commit or push after an error-intervened session.
 5. After a clean session, show a short summary with reviewed count, `Again` count, and `Good` count.
-6. Only if the user explicitly asks for git persistence, stage or commit `data/vocabulary.db`. Do not run `git commit` or `git push` automatically.
+6. After a clean session, automatically commit and push `data/vocabulary.db` to `main`:
+   ```
+   git checkout main && git pull origin main && git add data/vocabulary.db && git commit -m "chore: save vocabulary study session results ($(date +%Y-%m-%d))" && git push origin main
+   ```
+   Do not ask for confirmation. Do not commit or push after an error-intervened session.
 
 ## Viewer Mode (excluded words)
 
