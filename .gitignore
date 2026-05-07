@@ -5,3 +5,5 @@ __pycache__/
 .claude/worktrees/
 data/debug/
 data/*.log
+*-client_wal_index
+/tmp/
