@@ -361,7 +361,7 @@ _HTML = """<!DOCTYPE html>
     <div class="definition" id="definition"></div>
   </div>
 </div>
-<button class="btn btn-stop" id="stop-btn" onclick="stop()" style="display:none">✕ Stop</button>
+<button class="btn btn-stop" id="stop-btn" onclick="stop()" style="display:none">Stop</button>
 
 <script>
 let words = [], idx = 0, goodCount = 0, againCount = 0;
