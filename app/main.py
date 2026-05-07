@@ -78,6 +78,7 @@ def get_words(limit: int = 20):
         """
         SELECT w.id, w.word, w.pos, w.cefr,
                s.due_at,
+               s.reps AS repetitions,
                CASE WHEN s.learned_at IS NULL THEN 1 ELSE 0 END AS is_new
         FROM words AS w
         JOIN schedule AS s ON w.id = s.word_id
@@ -222,7 +223,7 @@ _HTML = """<!DOCTYPE html>
     transition: width 0.35s ease;
     width: 0%;
   }
-  #top-info {
+  #word-status {
     padding: 12px 20px;
     text-align: right;
     font-size: 0.8rem;
@@ -298,10 +299,11 @@ _HTML = """<!DOCTYPE html>
   }
   .btn:active { transform: scale(0.97); }
   .btn:disabled { opacity: 0.5; cursor: default; }
-  .btn-stop  { background: #1e1e2e; color: #555570; border: 1px solid #2a2a3e; }
-  .btn-again { background: #c0392b; color: #fff; }
+  .btn-stop  { position: fixed; top: 14px; left: 16px; z-index: 10; background: #1e1e2e; color: #555570; border: 1px solid #2a2a3e; width: auto; padding: 8px 14px; font-size: 0.85rem; }
+  .btn-again { background: #c0392b; color: #fff; flex: 1; width: auto; aspect-ratio: 1 / 1; font-size: 1.3rem; }
   .btn-hint  { background: #1a2e2e; color: #6fcfcf; border: 1px solid #2a4a4a; }
-  .btn-good  { background: #27ae60; color: #fff; }
+  .btn-good  { background: #27ae60; color: #fff; flex: 1; width: auto; aspect-ratio: 1 / 1; font-size: 1.3rem; }
+  .main-buttons { display: flex; gap: 12px; width: 100%; max-width: 320px; margin: 0 auto 10px; }
   .definition {
     margin: 0 0 20px;
     padding: 14px 18px;
@@ -353,20 +355,23 @@ _HTML = """<!DOCTYPE html>
 </head>
 <body>
 <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
-<div id="top-info"></div>
+<div id="word-status"></div>
 <div id="card-area"><div id="loading">Loading…</div></div>
+<button class="btn btn-stop" id="stop-btn" onclick="stop()" style="display:none">✕ Stop</button>
 
 <script>
 let words = [], idx = 0, goodCount = 0, againCount = 0;
 
 const pbar = document.getElementById('progress-bar');
-const topInfo = document.getElementById('top-info');
+const wordStatus = document.getElementById('word-status');
+const stopBtn = document.getElementById('stop-btn');
 const cardArea = document.getElementById('card-area');
 
 async function load() {
   const res = await fetch('/api/words');
   words = await res.json();
   idx = goodCount = againCount = 0;
+  stopBtn.style.display = 'none';
   words.length === 0 ? renderEmpty() : renderCard();
 }
 
@@ -374,7 +379,7 @@ function renderCard() {
   const w = words[idx];
   const total = words.length;
   pbar.style.width = (idx / total * 100) + '%';
-  topInfo.textContent = (idx + 1) + ' / ' + total;
+  wordStatus.textContent = w.is_new ? 'NEW' : '×' + w.repetitions + '회';
 
   cardArea.innerHTML = `
     <div class="card" id="card" onclick="reveal()" style="cursor:pointer">
@@ -382,15 +387,15 @@ function renderCard() {
       <div class="badges">
         <span class="badge b-pos">${esc(w.pos)}</span>
         <span class="badge b-cefr">${esc(w.cefr || '?')}</span>
-        ${w.is_new ? '<span class="badge b-new">NEW</span>' : ''}
       </div>
       <div class="tap-hint" id="tap-hint">탭하여 확인</div>
-      <div class="definition" id="definition"></div>
       <div class="buttons" id="buttons" style="display:none">
-        <button class="btn btn-stop"  onclick="event.stopPropagation();stop()">Stop</button>
-        <button class="btn btn-again" onclick="event.stopPropagation();rate('again')">Again</button>
-        <button class="btn btn-hint"  id="hint-btn" onclick="event.stopPropagation();hint()">Hint</button>
-        <button class="btn btn-good"  onclick="event.stopPropagation();rate('good')">Good</button>
+        <div class="main-buttons">
+          <button class="btn btn-again" onclick="event.stopPropagation();rate('again')">Again</button>
+          <button class="btn btn-good"  onclick="event.stopPropagation();rate('good')">Good</button>
+        </div>
+        <button class="btn btn-hint" id="hint-btn" onclick="event.stopPropagation();hint()">Hint</button>
+        <div class="definition" id="definition"></div>
       </div>
     </div>`;
 }
@@ -401,6 +406,7 @@ function reveal() {
   if (buttons && buttons.style.display === 'none') {
     buttons.style.display = 'flex';
     tapHint.style.display = 'none';
+    stopBtn.style.display = 'block';
     document.getElementById('card').style.cursor = 'default';
   }
 }
@@ -447,7 +453,8 @@ async function rate(rating) {
 
 function renderDone() {
   pbar.style.width = '100%';
-  topInfo.textContent = '';
+  wordStatus.textContent = '';
+  stopBtn.style.display = 'none';
   cardArea.innerHTML = `
     <div class="card">
       <div class="done-title">Session Complete</div>
@@ -462,7 +469,8 @@ function renderDone() {
 
 function renderEmpty() {
   pbar.style.width = '100%';
-  topInfo.textContent = '';
+  wordStatus.textContent = '';
+  stopBtn.style.display = 'none';
   cardArea.innerHTML = `
     <div class="card">
       <div class="done-title">All caught up!</div>
