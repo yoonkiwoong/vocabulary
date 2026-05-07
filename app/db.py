@@ -43,7 +43,8 @@ def init() -> None:
     if not USE_TURSO:
         return
     import libsql_client as lc
-    _client = lc.create_client_sync(url=_TURSO_URL, auth_token=_TURSO_TOKEN)
+    http_url = _TURSO_URL.replace("libsql://", "https://", 1)
+    _client = lc.create_client_sync(url=http_url, auth_token=_TURSO_TOKEN)
 
     _client.batch([lc.Statement(ddl) for ddl in _DDL])
 
