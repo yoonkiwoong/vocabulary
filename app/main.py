@@ -237,7 +237,7 @@ _HTML = """<!DOCTYPE html>
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    padding: 20vh 24px 0;
+    padding: 12vh 24px 0;
     cursor: pointer;
   }
   .card {
